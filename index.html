@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#02030a">
+<script>if(matchMedia("(pointer:coarse)").matches)document.documentElement.classList.add("touch")</script>
+<title>Echoes After Midnight 3D</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="grain"></canvas><div id="lens"></div>
+  <div id="hud"></div><div id="dot"></div><div id="vig"></div><div id="slit" class="hide"></div><div id="fade"></div><div id="flash"></div><div id="lidT" class="lid"></div><div id="lidB" class="lid"></div>
+  <canvas id="mini" class="hide" width="360" height="240"></canvas>
+  <canvas id="radar" class="hide" width="320" height="320"></canvas>
+  <div id="toast"></div><div id="warn"></div><div id="prompt"></div><div id="msg"></div>
+  <div id="menu" class="screen">
+    <svg class="angel" viewBox="0 0 300 600" aria-hidden="true"><defs><path id="wing" d="M146 240C92 205 40 140 16 36 54 68 70 84 84 110 70 60 80 30 100 6 106 70 126 130 146 164Z"/></defs>
+      <g fill="#070812" stroke="#232850" stroke-width="1.5"><use href="#wing"/><use href="#wing" transform="translate(300 0) scale(-1 1)"/>
+      <path d="M150 112C118 112 104 150 100 200L74 590H226L200 200C196 150 182 112 150 112Z"/><path d="M108 196C100 122 128 90 150 90 172 90 200 122 192 196 176 174 124 174 108 196Z"/></g>
+      <ellipse cx="150" cy="160" rx="24" ry="30" fill="#020208"/><rect class="eye" x="148.4" y="140" width="3.2" height="24" fill="#ff1a40"/>
+      <g fill="#0c0e1c" stroke="#2a3060" stroke-width="1.5"><ellipse cx="133" cy="160" rx="15" ry="32" transform="rotate(10 133 160)"/><ellipse cx="167" cy="160" rx="15" ry="32" transform="rotate(-10 167 160)"/></g></svg>
+    <div id="whisper"></div>
+    <h1>ECHOES<br><b>AFTER MIDNIGHT</b></h1>
+    <p class="tag">Escape the school. Don’t look away from the stone.</p>
+    <button id="btnNew">New Game</button><button id="btnCont">Continue</button><button id="btnSound">Sound: On</button>
+    <p class="hint">Headphones recommended · <span class="kb">click</span><span class="tc">tap</span> anywhere to let the sound in</p>
+    <button id="btnFull" class="tc">Fullscreen</button>
+    <p class="rot tc">↻ Best played with your phone in landscape</p>
+    <p class="help kb">Mouse: look · WASD: move · ←/→: turn · E: interact / hide · F: flashlight · Shift: sprint · O: look back (hold) · Space: hold breath · G: blink · J: notes · I: inventory · N: map · B: use battery · P: pause · M: mute · T: radar</p>
+    <p class="help tc">Left thumb: move (push to the edge to sprint) · Right thumb: drag to look · Buttons: use / hide, blink, torch, look behind, hold breath · Top row: pause, notes, inventory, map, radar, battery, sound</p>
+  </div>
+  <div id="intro" class="screen hide"><h2>11:58 PM</h2>
+    <p>You wake on a cold infirmary bed. Your head is full of static. You can’t remember how you got here, only your name: Aki.</p>
+    <p>The wall clock is frozen at midnight. The door is locked. Somewhere beyond it, stone scrapes against stone.</p>
+    <p>Find a way through the school. Solve what must be solved. Reach the exit before dawn, and never look away from the stone.</p>
+    <button id="btnWake">Open your eyes</button></div>
+  <div id="pad" class="screen hide"><h2 id="padT"></h2><div id="padD"></div><div id="padG"></div><button id="btnPadX">Step back</button></div>
+  <div id="journal" class="screen hide"><h2>Notes &amp; Memories</h2><div id="jlist"></div><button id="btnJ">Close (J)</button></div>
+  <div id="inv" class="screen hide"><h2>Inventory</h2><div id="invG"></div><div id="invD"></div><button id="btnUse" class="hide">Use battery (B)</button><button id="btnInvX">Close (I)</button></div>
+  <div id="map" class="screen hide"><h2>School Map</h2><canvas id="mapC" width="1200" height="260"></canvas><p id="mapObj"></p>
+    <p class="help"><span style="color:#2fd3b0">■</span> open door &nbsp; <span style="color:#e0244c">■</span> locked door &nbsp; <span style="color:#5dff7a">■</span> exit &nbsp; <span style="color:#ffd24a">■</span> safe &nbsp; <span style="color:#3a7bd5">■</span> hiding locker &nbsp; <span style="color:#b88a2e">■</span> desk &nbsp; ➤ you</p>
+    <button id="btnMapX">Close (N)</button></div>
+  <div id="pause" class="screen hide"><h2>Paused</h2><button id="btnResume">Resume</button><button id="btnQuit">Main Menu</button></div>
+  <div id="secret" class="hide" aria-hidden="true"><div id="sFrame"><div id="sMat"><img id="sImg" src="assets/ui/acheron.jpg" alt=""></div><div id="sPlate">A C H E R O N</div></div><p id="sHint">Esc / click to put it away</p></div>
+  <div id="over" class="screen hide"><h2 id="overTitle"></h2><p id="overText"></p><button id="btnRetry">Restart</button><button id="btnMenu">Main Menu</button></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="assets/models/alice-data.js"></script>
+<script src="assets/models/alice.js"></script>
+<script src="game.js"></script>
+<script src="touch.js"></script>
+</body>
+</html>
