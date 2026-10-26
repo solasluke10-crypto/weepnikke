@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open game in browser (no extension needed)",
+      "type": "shell",
+      "command": "start index.html",
+      "windows": { "command": "start index.html" },
+      "osx": { "command": "open index.html" },
+      "linux": { "command": "xdg-open index.html" },
+      "problemMatcher": []
+    }
+  ]
+}

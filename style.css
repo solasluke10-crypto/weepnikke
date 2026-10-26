@@ -278,3 +278,47 @@ button{position:relative;background:linear-gradient(#1a0a12,#0b0407);box-shadow:
 #claws .cd{position:absolute;inset:0;background:#000;opacity:0}
 #claws .sl{position:absolute;left:-12%;width:124%;height:1.6vmin;border-radius:50%;background:linear-gradient(90deg,transparent,#3a000a 10%,#c00020 50%,#3a000a 90%,transparent);box-shadow:0 0 2vmin #b0001c,0 0 .6vmin #ff2a48;opacity:0;transform:rotate(var(--a)) scaleX(0);transform-origin:0 50%;transition:transform .09s ease-out,opacity .05s}
 #claws .sl.on{opacity:.95;transform:rotate(var(--a)) scaleX(1)}
+
+/* ===================== MOBILE FRIENDLY PASS ===================== */
+/* the Hollow's blindness: a black screen for a couple of seconds (opacity is set from game.js, see lids()) */
+#blind{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+
+/* bigger buttons, and the hold-breath button is always on screen: it sits in the middle column, above LOOK BEHIND */
+#touch{--b:68px;--e:84px}
+#tbH{right:calc(var(--m) + var(--e) + var(--g));bottom:calc(var(--mb) + 4px + 2 * (var(--b) + var(--g)))}
+#tbH.down{background:rgba(60,90,160,.85)}
+.tb small{font-size:9px}
+#tbar{gap:8px}
+#tbar button{width:42px;height:42px;font-size:19px}
+
+/* screens: readable text, full-width thumb-sized buttons on portrait phones */
+html.touch p{font-size:16px;line-height:1.45}
+html.touch #jlist p{font-size:16px}
+html.touch #invD{font-size:16px}
+html.touch .screen button{min-height:52px;font-size:14px}
+html.touch #invG{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+html.touch #invG .slot{min-height:76px}
+html.touch #padG{grid-template-columns:repeat(3,76px);gap:10px}
+html.touch #padG button{min-height:60px;font-size:24px}
+
+@media (orientation:portrait){
+  html.touch .screen button{min-width:min(300px,82vw)}
+  html.touch #btnFull{min-width:min(300px,82vw)}
+  html.touch #jlist,html.touch #invD{max-width:94%}
+  html.touch #jlist{max-height:62vh}
+  html.touch #hud{font-size:12px}
+  html.touch p{max-width:90%}
+  #touch{--b:62px;--e:78px;--g:9px}
+}
+/* small landscape phones: keep the three button columns clear of the radar and the thumb stick */
+@media (max-height:480px){
+  #touch{--b:58px;--e:72px;--g:8px}
+  html.touch .screen button{min-height:44px}
+  html.touch #padG{grid-template-columns:repeat(6,60px)}
+  html.touch #padG button{min-height:48px;font-size:20px}
+  #tbar button{width:38px;height:38px;font-size:17px}
+}
+@media (max-height:400px){
+  #touch{--b:52px;--e:64px;--g:7px}
+  #tbar button{width:34px;height:34px;font-size:16px}
+}

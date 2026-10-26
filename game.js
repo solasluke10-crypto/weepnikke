@@ -162,7 +162,7 @@ const CODES={   // keypad puzzles
 let G={state:'menu'},P,keys={},msg='',msgT=0,trans=null,flickT=0,t0=0,lockT=0,wakeT=0,lieT=0,PAD=null,scareT=0,shakeT=0,flashT=0,boT=0,boNext=40,hurtCd=0,sCd=0,heartT=0,actx,yaw=0,pitch=0,ST=[],muted=false;
 try{muted=!!JSON.parse(ls.get('eam_set')||'{}').mute}catch(e){}
 function intro(){G.state='intro';document.exitPointerLock();showScreen('intro')}
-function newGame(){G={state:'play',room:'ward',hasKey:false,libKey:false,ward:false,safe:false,taken:[],seq:0,solved:false,bats:0,vis:{}};P={x:BED_OUT[0],y:BED_OUT[1],hp:100,bat:100,light:true,hidden:false,vx:0,vy:0,bob:0,ph:0};yaw=0;pitch=1.05;wakeT=3;enter();say('You wake in a locked infirmary. Find a way out of the building.',6);save();lieT=LIE;P.x=BED_IN[0];P.y=BED_IN[1]}
+function newGame(){blindT=hCool=0;G={state:'play',room:'ward',hasKey:false,libKey:false,ward:false,safe:false,taken:[],seq:0,solved:false,bats:0,vis:{}};P={x:BED_OUT[0],y:BED_OUT[1],hp:100,bat:100,light:true,hidden:false,vx:0,vy:0,bob:0,ph:0};yaw=0;pitch=1.05;wakeT=3;enter();say('You wake in a locked infirmary. Find a way out of the building.',6);save();lieT=LIE;P.x=BED_IN[0];P.y=BED_IN[1]}
 /* WAKE-UP: Aki starts lying in the bed (x:880,y:610 in the ward), staring at the ceiling, then sits up and swings out of it. LIE = seconds, BED_IN = where she lies, BED_OUT = where she ends up standing */
 const LIE=7,BED=ROOMS.ward.props.find(p=>p.k==='bed'&&p.f==='n'),BED_IN=[BED.x+BED.w/2,BED.y+BED.h/2],BED_OUT=[BED_IN[0],BED.y-30];   // taken from the bed prop so it follows any room resize
 function lieE(){const u=Math.max(0,lieT/LIE);if(lieT<=0||u>=.5)return lieT>0?0:1;const k=1-u/.5;return k*k*(3-2*k)}   // 0 = lying down, 1 = standing, smooth
@@ -379,7 +379,7 @@ function grain(dt){if(!GR)return;if(!GFX.grain){GR.style.display='none';return}G
 function blink(){if(G.state!=='play'||P.hidden||trans||blinkT>0||blinkCd>0)return;blinkT=blinkLen=BLINK;blinkCd=BLINK+BLINK_CD;eyeT=BLINK_EVERY;beep(160,.07,'sine',.05)}
 function forceBlink(){blinkT=blinkLen=BLINK_FORCED;blinkCd=BLINK_FORCED+BLINK_CD;eyeT=BLINK_EVERY;beep(130,.09,'sine',.07)}   // your eyes give out after BLINK_EVERY seconds without blinking
 const VY=()=>yaw+backA;   // the direction the camera faces (body direction + look-back turn)
-function lids(){const c=blinkT>0?Math.sin(Math.min(1,1-blinkT/blinkLen)*Math.PI):(G.state==='play'&&!P.hidden&&eyeT<5?(1-eyeT/5)*.14:0),t=$('lidT'),b=$('lidB');if(!t||!b)return;t.style.transform='translateY('+(-(1-c)*100)+'%)';b.style.transform='translateY('+((1-c)*100)+'%)'}
+function lids(){const bl=$('blind');if(bl)bl.style.opacity=blindT>0?Math.min(1,blindT/.35):0;const c=blinkT>0?Math.sin(Math.min(1,1-blinkT/blinkLen)*Math.PI):(G.state==='play'&&!P.hidden&&eyeT<5?(1-eyeT/5)*.14:0),t=$('lidT'),b=$('lidB');if(!t||!b)return;t.style.transform='translateY('+(-(1-c)*100)+'%)';b.style.transform='translateY('+((1-c)*100)+'%)'}
 function fxFrame(dt){lids();const on=spot.intensity>0;beam.visible=on&&GFX.beam>0;beamMat.uniforms.op.value=GFX.beam*spot.intensity/FLASH.intensity;
   lamp.intensity=boT>0?0:LAMP_I*(flickT>0?.15+Math.random()*.5:1);dustUpdate(dt);grain(dt)}
 if(GFX.env)try{const pm=new THREE.PMREMGenerator(R3),es=new THREE.Scene(),et=ctex(256,128,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#10163a');gr.addColorStop(.5,'#0a0e22');gr.addColorStop(1,'#04050c');g.fillStyle=gr;g.fillRect(0,0,w,h);
@@ -454,11 +454,12 @@ const M_STONE2=new THREE.MeshStandardMaterial({map:T_STONE,bumpMap:T_STONEB,bump
   M_TEETH=cm(0xd8d4c0,{roughness:.5}),M_BLOOD=cm(0x5a0a12,{roughness:.25}),M_BLK=new THREE.MeshBasicMaterial({color:0x020202});
 /* ---------- ANGEL SETTINGS (tune here) ----------
    ANGELS_PER_ROOM: how many angels fill each room (authored spots in ROOMS first, the rest are random open floor spots, never closer than ANGEL_MIN_DIST px to you or ANGEL_GAP px to each other).
-   ALICE_CHANCE: chance (0-1) that an angel is replaced by the 3D Alice (NIKKE) model from assets/models/ (her look and size are tuned in ALICE_CFG at the top of assets/models/alice.js). It is rolled first; the angels it doesn't replace are normal angels or Dorothy angels. 0 = never, 1 = always. Until her textures have loaded, the normal angels spawn instead.
+   ALICE_CHANCE: chance (0-1) that an angel is replaced by the 3D Alice (NIKKE) model from assets/models/ (her look and size are tuned in ALICE_CFG at the top of assets/models/alice.js). It is rolled first; the angels it doesn't replace are normal angels or Dorothy angels. Normally 1%.
+   ALICE_CHANCE_UNLOCKED: the chance once the acheron code has been entered (type acheron, or on a phone walk forward twice then backward three times). That is remembered in this browser (localStorage key 'eam_alice'). 1 = every angel is Alice. Until her textures have loaded, the normal angels spawn instead.
    DOROTHY_CHANCE: chance that an angel is the pink-haired, white-winged "Dorothy" variant (a stone homage to Dorothy from NIKKE). 0 = never, 1 = always.
    LUNGES: while you are NOT looking at it, an angel winds up for LUNGE_WIND s (freezes, eyes flare, stone grinds) and then dashes at LUNGE_SPD px/s for LUNGE_TIME s.
    It tries again every LUNGE_EVERY seconds [min,max] (sooner with every memory you find). Only angels within LUNGE_RANGE px lunge, and never two within LUNGE_GAP s of each other. Look at it and it freezes mid-lunge. */
-const ANGELS_PER_ROOM={hall:3,class:3,ward:2,lib:4,store:2,boiler:3,chapel:4},ANGEL_MIN_DIST=460,ANGEL_GAP=210,DOROTHY_CHANCE=.5,ALICE_CHANCE=.75;
+const ANGELS_PER_ROOM={hall:3,class:3,ward:2,lib:4,store:2,boiler:3,chapel:4},ANGEL_MIN_DIST=460,ANGEL_GAP=210,DOROTHY_CHANCE=.5,ALICE_CHANCE=.01,ALICE_CHANCE_UNLOCKED=1;let aliceUnlocked=ls.get('eam_alice')==='1';
 const LUNGE_EVERY=[3.5,7.5],LUNGE_WIND=.4,LUNGE_TIME=.75,LUNGE_SPD=400,LUNGE_RANGE=720,LUNGE_GAP=1.4;let lungeG=0;
 const M_HAIR=new THREE.MeshStandardMaterial({map:T_STONE,bumpMap:T_STONEB,bumpScale:1.2,roughness:.78,color:lin(0xe58cb8)}),   // pink hair, petrified
   M_DRESS=new THREE.MeshStandardMaterial({map:T_STONE,bumpMap:T_STONEB,bumpScale:1,roughness:.88,color:lin(0xe9e6f0),side:THREE.DoubleSide}),
@@ -477,7 +478,7 @@ function ik(A,H,pole){const l1=.42,l2=.4,S0=A.p.position;_D.copy(H).sub(S0);let 
    a=0 weeping, hands over the face, mouth shut  ->  a=1 arms clawing forward, wings spread, red eyes, fanged mouth wide open. */
 /* Alice statue: the 3D model instead of the built-from-boxes angel. It has the same fields poseStatue() and the jumpscares expect (arms, wings, eyes, head, mouth), but only her eyes and her lean actually move. */
 function makeAliceStatue(){const g=new THREE.Group(),al=ALICE.make({castShadow:!MOBILE});g.add(al);g.alice=al;g.tilt=Math.random()<.5?-1:1;g.arms=[];g.wings=[];g.blades=[];g.eyes=al.eyeMats;g.head=new THREE.Group();g.mouth=new THREE.Group();g.dor=false;g.scale.setScalar(1.22);return g}
-function makeStatue(dor=Math.random()<DOROTHY_CHANCE){if(ALICE.ready&&Math.random()<ALICE_CHANCE)return makeAliceStatue();const g=new THREE.Group(),st=M_STONE2;g.tilt=Math.random()<.5?-1:1;g.arms=[];g.wings=[];g.eyes=[];g.blades=[];g.dor=dor;
+function makeStatue(dor=Math.random()<DOROTHY_CHANCE){if(ALICE.ready&&Math.random()<(aliceUnlocked?ALICE_CHANCE_UNLOCKED:ALICE_CHANCE))return makeAliceStatue();const g=new THREE.Group(),st=M_STONE2;g.tilt=Math.random()<.5?-1:1;g.arms=[];g.wings=[];g.eyes=[];g.blades=[];g.dor=dor;
   const add=(geo,mt,x,y,z,par)=>{const m=new THREE.Mesh(geo,mt);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(par||g).add(m);return m};
   add(new THREE.CylinderGeometry(.2,.62,1.55,14),st,0,.78,0);                                                          // robe
   for(let i=0;i<8;i++){const a=i/8*Math.PI*2;add(new THREE.BoxGeometry(.07,1.35,.16),st,Math.sin(a)*.4,.7,Math.cos(a)*.4).rotation.y=a}   // robe folds
@@ -565,7 +566,7 @@ function inView(s){
 function statuesUpdate(dt){const fr=Math.min(5,G.taken.filter(i=>i[0]==='f').length),SPD=blinkT>0?BLINK_LUNGE:85+10*fr;   // they get faster with every memory you pick up
   lungeG-=dt;
   for(const s of ST){const dx=P.x-s.x,dy=P.y-s.y,d=Math.hypot(dx,dy)||1;
-    s.d=d;s.seen=!P.hidden&&boT<=0&&blinkT<=0&&d<SIGHT&&inView(s)&&los(s,P);
+    s.d=d;s.seen=!P.hidden&&boT<=0&&blinkT<=0&&blindT<=0&&d<SIGHT&&inView(s)&&los(s,P);
     if(s.seen&&!s.wasSeen&&strobeCd<=0){strobe(STROBE_LEN);strobeCd=STROBE_COOLDOWN}   // first sight of an angel
     s.wasSeen=s.seen;if(d<STROBE_NEAR&&!s.close){s.close=true;strobe(STROBE_LEN*1.3)}else if(d>STROBE_NEAR+150)s.close=false;   // one close, once per approach
     if(!s.seen){
@@ -585,13 +586,14 @@ function statuesUpdate(dt){const fr=Math.min(5,G.taken.filter(i=>i[0]==='f').len
   if(P.hp<100&&!ST.some(s=>!s.seen&&s.d<250))P.hp=Math.min(100,P.hp+3*dt)}
 /* ---------- THE HOLLOW: a second, blind entity that roams every room once the angels wake. It has no eyes, only enormous ears.
    It hears you breathe. Inside its hearing radius you must HOLD YOUR BREATH (hold Space, or the BREATH button on a phone). Sprinting is heard from further away, and holding your breath does not hide it.
-   Hold too long and you gasp, which it hears from even further. When it finds you it claws your eyes out for 3 seconds and the game is over.
+   Hold too long and you gasp, which it hears from even further. When it finds you it blinds you for HOLLOW_BLIND seconds (black screen, angels can't be watched) and then wanders off.
+   HOLLOW_BLIND: seconds of blindness (black screen) when it finds you · HOLLOW_BLIND_CD: seconds after that before it can find you again (it wanders off) · HOLLOW_KILLS: true brings back the old instant game over with the eye-clawing scare.
    HOLLOW_ON: false removes it. HOLLOW_FRAGS: memory fragments needed before it appears (default: same as the angels).
    HOLLOW_HEAR_R: px (40 px = 1 m) within which normal breathing is heard · HOLLOW_RUN_R: sprinting · HOLLOW_GASP_R: a gasp. Walls and lockers shrink these.
    HOLLOW_DETECT: seconds of being heard before it finds you (it drains away when you go quiet) · BREATH_DRAIN: % of lungs per second while holding (14 = about 7 s) · BREATH_MIN: lungs needed after a gasp before you can hold again. ---------- */
-const HOLLOW_ON=true,HOLLOW_FRAGS=ANGEL_FRAGS,HOLLOW_WALK=62,HOLLOW_HUNT=105,HOLLOW_HEAR_R=380,HOLLOW_RUN_R=560,HOLLOW_GASP_R=640,HOLLOW_DETECT=1.1,HOLLOW_SCARE=3;
+const HOLLOW_ON=true,HOLLOW_FRAGS=ANGEL_FRAGS,HOLLOW_WALK=62,HOLLOW_HUNT=105,HOLLOW_HEAR_R=380,HOLLOW_RUN_R=560,HOLLOW_GASP_R=640,HOLLOW_DETECT=1.1,HOLLOW_SCARE=3,HOLLOW_BLIND=2,HOLLOW_BLIND_CD=8,HOLLOW_KILLS=false;
 const BREATH_MAX=100,BREATH_DRAIN=14,BREATH_REGEN=22,BREATH_MIN=30;
-let HO=null,hDet=0,hAlert=false,hsT=0,hSw=[0,0,0],hTold=false,breath=100,holding=false,gasped=false,needRel=false;
+let blindT=0,hCool=0,HO=null,hDet=0,hAlert=false,hsT=0,hSw=[0,0,0],hTold=false,breath=100,holding=false,gasped=false,needRel=false;
 const hollowOn=()=>HOLLOW_ON&&fragCount()>=HOLLOW_FRAGS;
 const M_HSKIN=new THREE.MeshStandardMaterial({map:T_STONE,bumpMap:T_STONEB,bumpScale:.7,roughness:.62,color:lin(0x8b968a)}),
   M_HEAR=new THREE.MeshStandardMaterial({color:lin(0x6e5a60),roughness:.7,side:THREE.DoubleSide}),M_HCLAW=cm(0xd8d1bb,{roughness:.4}),M_HVOID=new THREE.MeshBasicMaterial({color:0x000000});
@@ -640,7 +642,7 @@ function hollowGo(h,tx,ty,spd,dt){h.nt-=dt;if(h.nt<=0||Math.hypot(tx-h.ntx,ty-h.
   const np=h.np||[tx,ty],ex=np[0]-h.x,ey=np[1]-h.y,ed=Math.hypot(ex,ey)||1,ox=h.x,oy=h.y;move(h,ex/ed*spd*dt,ey/ed*spd*dt,HOLLOW_SIZE);h.mv=dt>0?Math.hypot(h.x-ox,h.y-oy)/dt:0;h.face=Math.atan2(ex,ey);return Math.hypot(tx-h.x,ty-h.y)}
 function hollowWp(h){const R=ROOMS[G.room];for(let i=0;i<40;i++){const x=rnd(90,R.w-90),y=rnd(110,R.h-110);if(!hits(x,y,HOLLOW_SIZE+14)&&Math.hypot(x-h.x,y-h.y)>240&&hollowNav(h,x,y)){h.wp=[x,y];return}}h.wp=null}
 /* holding your breath: Space (hold). It drains; at 0 you gasp, and you can't hold again until you have recovered BREATH_MIN and let go of the key. */
-function breathUpdate(dt){const want=!!keys[' ']&&lieT<=0&&!trans&&G.state==='play';if(!want)needRel=false;
+function breathUpdate(dt){const want=(!!keys[' ']||!!keys.h)&&lieT<=0&&!trans&&G.state==='play';if(!want)needRel=false;
   if(gasped){holding=false;breath=Math.min(BREATH_MAX,breath+BREATH_REGEN*.6*dt);if(breath>=BREATH_MIN)gasped=false;return}
   if(want&&!needRel&&breath>0){if(!holding){holding=true;beep(120,.18,'sine',.05)}breath-=BREATH_DRAIN*dt;
     if(breath<=0){breath=0;holding=false;gasped=needRel=true;beep(85,.7,'sawtooth',.26);say('You can’t hold it any longer. You gasp!',2.5);if(HO&&HO.delay<=0&&HO.d<HOLLOW_GASP_R*(HO.mul||1))hDet=1}}
@@ -648,12 +650,13 @@ function breathUpdate(dt){const want=!!keys[' ']&&lieT<=0&&!trans&&G.state==='pl
 function hollowUpdate(dt){const h=HO;if(!h||trans)return;
   if(h.delay>0){h.delay-=dt;if(h.delay<=0){h.g.visible=true;h.mode='hunt';h.tx=P.x;h.ty=P.y;creak();say('Something has come through the door behind you...',3.5)}return}
   const dx=P.x-h.x,dy=P.y-h.y,d=Math.hypot(dx,dy)||1;h.d=d;h.lo=los(h,P);const mul=(h.lo?1:.65)*(P.hidden?.55:1);h.mul=mul;   // walls muffle you, a locker muffles you more
-  const heard=(!holding&&d<HOLLOW_HEAR_R*mul)||(runK>.5&&!P.hidden&&d<HOLLOW_RUN_R*mul);
-  if(d<44&&(!P.hidden||d<34))hDet=1;else hDet=Math.max(0,Math.min(1,hDet+(heard?dt/HOLLOW_DETECT:-dt*.5)));
+  const heard=hCool<=0&&((!holding&&d<HOLLOW_HEAR_R*mul)||(runK>.5&&!P.hidden&&d<HOLLOW_RUN_R*mul));
+  hCool=Math.max(0,hCool-dt);
+  if(hCool>0)hDet=0;else if(d<44&&(!P.hidden||d<34))hDet=1;else hDet=Math.max(0,Math.min(1,hDet+(heard?dt/HOLLOW_DETECT:-dt*.5)));
   if(heard){h.tx=P.x;h.ty=P.y;if(h.mode!=='hunt'){h.mode='hunt';beep(rnd(55,75),.6,'sawtooth',.16)}}
   hAlert=h.mode==='hunt'||hDet>.3;
   if(!hTold&&d<HOLLOW_HEAR_R*1.6){hTold=true;say('Something is listening. Hold your breath! ('+(touchMode?'BREATH button':'hold Space')+')',5)}
-  if(hDet>=1){startHollowScare();return}
+  if(hDet>=1){if(HOLLOW_KILLS){startHollowScare();return}hollowBlind(h)}
   if(h.mode==='hunt'){if(hollowGo(h,h.tx,h.ty,HOLLOW_HUNT,dt)<34){h.mode='listen';h.wait=rnd(3,5.5);h.mv=0;h.face=Math.atan2(dx,dy)}}   // it goes to the last place it heard you, then listens
   else if(h.mode==='patrol'){if(!h.wp)hollowWp(h);if(!h.wp||hollowGo(h,h.wp[0],h.wp[1],HOLLOW_WALK,dt)<30){h.mode='listen';h.wait=rnd(2,4.5);h.mv=0;h.wp=null}}
   else{h.mv=0;h.wait-=dt;if(d<HOLLOW_HEAR_R*1.4)h.face=Math.atan2(dx,dy);else{h.tw-=dt;if(h.tw<=0){h.tw=rnd(1,2.2);h.face+=rnd(-1.3,1.3)}}if(h.wait<=0){h.mode='patrol';h.wp=null}}
@@ -675,6 +678,10 @@ CLW.innerHTML='<div class="cb"></div>'+[[18,-18],[31,-13],[44,-21],[53,15],[66,2
 $('wrap').appendChild(CLW);
 function hClaws(n){const sl=CLW.querySelectorAll('.sl');if(n<0){CLW.classList.remove('hide');sl.forEach(i=>i.classList.remove('on'));CLW.querySelector('.cb').style.opacity=0;CLW.querySelector('.cd').style.opacity=0;return}for(let i=n*3;i<n*3+3;i++)sl[i].classList.add('on')}
 /* DEATH: it finds you. Its face fills the screen, three rakes of the claws across your eyes, blood, then black. HOLLOW_SCARE seconds, then the game-over screen. */
+/* NEW: when it finds you, it only blinds you for HOLLOW_BLIND seconds. The screen goes black (you can still walk), you can't keep an angel frozen while you can't see, and the hollow shuffles off to a far corner and ignores you for HOLLOW_BLIND_CD seconds. */
+function hollowBlind(h){blindT=HOLLOW_BLIND;hCool=HOLLOW_BLIND_CD;hDet=0;holding=false;h.mode='patrol';h.wp=null;h.wait=0;
+  const far=hollowSpot(P.x,P.y,620)||hollowSpot(P.x,P.y,420);if(far){h.x=far[0];h.y=far[1];h.np=null}
+  stinger(false);shakeT=.5;beep(55,.9,'sawtooth',.22);say('It found you. Something rakes your eyes - you can’t see!',3)}
 function startHollowScare(){if(!HO||G.state!=='play')return;G.state='hscare';G.by='h';hsT=0;hSw=[0,0,0];P.hidden=false;holding=false;HO.g.visible=true;HO.face=Math.atan2(P.x-HO.x,P.y-HO.y);HO.g.rotation.y=HO.face;HO.mv=0;hClaws(-1);stinger(true);flashT=1;beep(55,1.2,'sawtooth',.3)}
 function hollowScareFrame(dt){hsT+=dt;const h=HO,g=h.g,t=hsT,k=Math.min(1,t/.2),e=1-(1-k)*(1-k),raise=Math.min(1,t/.4);
   [.5,1.05,1.6].forEach((tm,i)=>{if(t>=tm&&!hSw[i]){hSw[i]=1;hClaws(i);stinger(true);shakeT=1;flashT=1;beep(rnd(70,110),.5,'sawtooth',.32);beep(rnd(700,1300),.4,'sawtooth',.18)}});
@@ -699,7 +706,10 @@ function key(k,down){keys[k]=down;if(!down)return;if(G.state==='pad'){padKey(k);
   if(k==='e')interact();if(k==='g')blink();if(k==='j')toggleJournal();if(k==='i')toggleInv();if(k==='n')toggleMap();if(k==='b'&&G.state==='play')useBat();if(k==='f'&&G.state==='play'&&P.bat>0)P.light=!P.light;if(k==='p')togglePause();if(k==='m')toggleSound();if(k==='t'&&G.state==='play'){radarOn=!radarOn;say('Radar '+(radarOn?'on':'off'),1.5)}}
 /* ---------- SECRET: type a-c-h-e-r-o-n anywhere to slide out a picture frame (assets/ui/acheron.jpg) ---------- */
 const SECRET_WORD='acheron';let secBuf='',secOpen=false,secPrev='play';
-function openSecret(){if(secOpen)return;secOpen=true;secPrev=G.state;G.state='secret';keys={};document.exitPointerLock();
+/* The acheron code also wakes Alice: every angel becomes her from now on, and the ones already in the room are swapped for her. */
+function unlockAlice(){if(aliceUnlocked)return;aliceUnlocked=true;ls.set('eam_alice','1');if(!ALICE.ready)return;
+  for(const s of ST){const old=s.g,g=makeAliceStatue();g.position.copy(old.position);g.rotation.copy(old.rotation);scene.remove(old);scene.add(g);s.g=g;s.dor=false;s.pa=-1}}
+function openSecret(){if(secOpen)return;secOpen=true;unlockAlice();secPrev=G.state;G.state='secret';keys={};document.exitPointerLock();
   const el=$('secret');el.classList.remove('hide');void el.offsetWidth;el.classList.add('show');
   beep(130,.7,'sawtooth',.05);setTimeout(()=>{beep(523,.9,'sine',.09);beep(659,1.1,'sine',.07)},650);setTimeout(()=>beep(784,1.4,'sine',.07),900)}
 function closeSecret(){if(!secOpen)return;secOpen=false;const el=$('secret');el.classList.remove('show');
@@ -824,7 +834,7 @@ function interact(){if(G.state!=='play'||trans||lieT>0)return;const t=target();i
     else{G.seq=0;say('Wrong order! The desks screech!');beep(100,.5,'sawtooth',.25);flickT=.8}}}
 /* ---------- update ---------- */
 function update(dt){breathUpdate(dt);
-  msgT-=dt;t0+=dt;blinkT-=dt;blinkCd-=dt;if(!P.hidden&&!trans&&blinkT<=0&&lieT<=0){eyeT-=dt;if(eyeT<=0)forceBlink()}
+  msgT-=dt;t0+=dt;blindT=Math.max(0,blindT-dt);blinkT-=dt;blinkCd-=dt;if(!P.hidden&&!trans&&blinkT<=0&&lieT<=0){eyeT-=dt;if(eyeT<=0)forceBlink()}
  flickT-=dt;lockT-=dt;wakeT-=dt;{const bt=keys.o&&!P.hidden&&lieT<=0&&!trans?Math.PI:0;backA+=(bt-backA)*Math.min(1,dt*BACK_SPEED);if(Math.abs(backA-bt)<.01)backA=bt}
  if(lieT>0){lieT-=dt;if(lieT<=0){lieT=0;P.x=BED_OUT[0];P.y=BED_OUT[1];pitch=0}else{P.x=BED_IN[0];P.y=BED_IN[1]+(BED_OUT[1]-BED_IN[1])*lieE()}}
  if(Math.random()<.008)flickT=.12;
